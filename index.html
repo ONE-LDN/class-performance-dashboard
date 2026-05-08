@@ -996,6 +996,21 @@
 
     <!-- Tab: Performance Matrix -->
     <div class="section" data-tab="matrix">
+      <div class="quarterly-controls">
+        <div class="control-group">
+          <label class="control-label">View:</label>
+          <div class="sort-toggles">
+            <button class="sort-btn active" id="matrixMonthBtn" onclick="setMatrixPeriodType('monthly')">Monthly</button>
+            <button class="sort-btn" id="matrixQuarterBtn" onclick="setMatrixPeriodType('quarterly')">Quarterly</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" id="matrixPeriodLabel">Month:</label>
+          <select id="matrixPeriodSelect">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+      </div>
       <div class="chart-container" id="matrixContainer"></div>
     </div>
 
@@ -1055,6 +1070,7 @@
     let currentTab = 'flags';
     let quarterlyState = { quarter: '', months: new Set() };
     let weeklyState = { week: '' };
+    let matrixState = { periodType: 'monthly', period: '' };
     let weeklyCoachSort = 'popularity';
     let quarterlyCoachSort = 'popularity';
     let charts = {};
@@ -1460,6 +1476,37 @@
       }
 
       updateMonthFilters();
+      populateMatrixSelect();
+    }
+
+    function populateMatrixSelect() {
+      const sel = document.getElementById('matrixPeriodSelect');
+      if (matrixState.periodType === 'monthly') {
+        const months = [...new Set(data.map(r => getMonthKey(r)))].sort();
+        sel.innerHTML = months.map(m => {
+          const [year, month] = m.split('-');
+          return `<option value="${m}">${MONTH_NAMES[parseInt(month) - 1]} ${year}</option>`;
+        }).join('');
+        matrixState.period = months[months.length - 1] || '';
+      } else {
+        const quarters = [...new Set(data.map(row => {
+          const date = parseDate(row.Week_Start);
+          const q = Math.floor(date.getMonth() / 3) + 1;
+          return `${date.getFullYear()}-Q${q}`;
+        }))].sort();
+        sel.innerHTML = quarters.map(q => `<option value="${q}">${q}</option>`).join('');
+        matrixState.period = quarters[quarters.length - 1] || '';
+      }
+      sel.value = matrixState.period;
+    }
+
+    function setMatrixPeriodType(type) {
+      matrixState.periodType = type;
+      document.getElementById('matrixMonthBtn').classList.toggle('active', type === 'monthly');
+      document.getElementById('matrixQuarterBtn').classList.toggle('active', type === 'quarterly');
+      document.getElementById('matrixPeriodLabel').textContent = type === 'monthly' ? 'Month:' : 'Quarter:';
+      populateMatrixSelect();
+      renderMatrix();
     }
 
     function updateMonthFilters() {
@@ -1504,8 +1551,8 @@
       var combos = {};
       data.forEach(function(r) {
         if (!recentWeeks.includes(r.Week_Start)) return;
-        var key = r.Class + '|||' + r.Coach_Label;
-        if (!combos[key]) combos[key] = { cls: r.Class, coach: r.Coach_Label, weeks: {}, rows: [] };
+        var key = r.Class + '|||' + r.Coach_Label + '|||' + r.Day_Time;
+        if (!combos[key]) combos[key] = { cls: r.Class, coach: r.Coach_Label, dayTime: r.Day_Time, weeks: {}, rows: [] };
         if (!combos[key].weeks[r.Week_Start]) combos[key].weeks[r.Week_Start] = [];
         combos[key].weeks[r.Week_Start].push(r.Attendance_Pct);
         combos[key].rows.push(r);
@@ -1524,7 +1571,7 @@
           if (avg < 50) streak++; else break;
         }
         var canx = cancellationRate(c.rows);
-        flags.push({ cls: c.cls, coach: c.coach, fill: latestAvg, streak: streak, canx: canx, type: streak >= 3 ? 'purple' : 'red' });
+        flags.push({ cls: c.cls, coach: c.coach, dayTime: c.dayTime, fill: latestAvg, streak: streak, canx: canx, type: streak >= 3 ? 'purple' : 'red' });
       });
 
       flags.sort(function(a, b) {
@@ -1554,7 +1601,7 @@
         return '<div class="flag-card flag-' + f.type + '">' +
           '<div class="flag-header">' +
             '<div class="flag-dot ' + f.type + '"></div>' +
-            '<div><div class="flag-title">' + f.cls + '</div><div class="flag-coach">' + f.coach + '</div></div>' +
+            '<div><div class="flag-title">' + f.cls + '</div><div class="flag-coach">' + f.coach + '</div>' + (f.dayTime ? '<div class="flag-coach" style="color:#8b8fa3;font-size:11px;margin-top:2px">' + f.dayTime + '</div>' : '') + '</div>' +
           '</div>' +
           '<div class="flag-stats">' +
             '<div><div class="flag-stat-label">Fill this week</div><div class="flag-stat-val' + valClass + '">' + f.fill.toFixed(1) + '%</div></div>' +
@@ -1757,7 +1804,7 @@
                   <div class="class-bar-target" style="left: ${targetPct}%"></div>
                 </div>
               </div>
-              <div class="class-bar-count">n=${c.count} · ↩ ${c.canx.toFixed(0)}%</div>
+              <div class="class-bar-count">${c.avg.toFixed(1)}% · n=${c.count} · ↩ ${c.canx.toFixed(0)}%</div>
             </div>
           `;
         }).join('');
@@ -1786,7 +1833,7 @@
                   <div class="coach-bar-target" style="left: ${targetPct}%"></div>
                 </div>
               </div>
-              <div class="coach-bar-count">n=${c.count}</div>
+              <div class="coach-bar-count">${c.avg.toFixed(1)}% · n=${c.count}</div>
             </div>
           `;
         }).join('');
@@ -1939,7 +1986,7 @@
                 <div class="coach-bar-target" style="left: ${targetPct}%"></div>
               </div>
             </div>
-            <div class="coach-bar-count">n=${c.count}</div>
+            <div class="coach-bar-count">${c.avg.toFixed(1)}% · n=${c.count}</div>
           </div>
         `;
       }).join('');
@@ -1965,8 +2012,18 @@
     }
 
     function renderMatrix() {
-      const week = weeklyState.week;
-      const filtered = data.filter(r => r.Week_Start === week);
+      let filtered;
+      if (matrixState.periodType === 'monthly') {
+        filtered = data.filter(r => getMonthKey(r) === matrixState.period);
+      } else {
+        const months = getMonthsInQuarter(matrixState.period);
+        filtered = data.filter(r => months.includes(getMonthKey(r)));
+      }
+
+      if (!filtered.length) {
+        document.getElementById('matrixContainer').innerHTML = '<p style="color:#8b8fa3;text-align:center;padding:40px">No data for this period</p>';
+        return;
+      }
       
       const classes = [...new Set(filtered.map(r => r.Class))].sort((a, b) => {
         const avgA = wbr(filtered.filter(r => r.Class === a));
@@ -2037,8 +2094,9 @@
     }
 
     function renderTrends() {
-      const classes = [...new Set(data.map(r => r.Class))];
-      const weeks = [...new Set(data.map(r => r.Week_Start))].sort((a, b) => parseDate(a) - parseDate(b));  
+      const ACTIVE_CLASSES = ['Pilates', 'Yoga', 'HIIT', 'Weights'];
+      const classes = [...new Set(data.map(r => r.Class))].filter(c => ACTIVE_CLASSES.includes(c));
+      const weeks = [...new Set(data.map(r => r.Week_Start))].sort((a, b) => parseDate(a) - parseDate(b));
 
       let toggleHtml = classes.map((c, idx) => `
         <button class="class-toggle" data-class="${c}" style="--color: ${CLASS_COLOURS[idx % CLASS_COLOURS.length]}">
@@ -2141,6 +2199,10 @@
     document.getElementById('weekSelect').addEventListener('change', (e) => {
       weeklyState.week = e.target.value;
       renderWeekly();
+    });
+
+    document.getElementById('matrixPeriodSelect').addEventListener('change', (e) => {
+      matrixState.period = e.target.value;
       renderMatrix();
     });
 
