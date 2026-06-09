@@ -738,54 +738,6 @@
       margin-bottom: 2px;
     }
 
-    /* Trends */
-    .class-toggles {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .class-toggle {
-      padding: 6px 12px;
-      background-color: #0d0d0d;
-      border: 1px solid #1e1e1e;
-      border-radius: 20px;
-      color: #666;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .class-toggle::before {
-      content: '';
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: #e8c547;
-      opacity: 0.3;
-      transition: all 0.2s;
-    }
-
-    .class-toggle:hover {
-      border-color: #e8c547;
-      color: #f0f0f0;
-    }
-
-    .class-toggle.active {
-      background-color: rgba(232, 197, 71, 0.2);
-      border-color: #e8c547;
-      color: #e8c547;
-    }
-
-    .class-toggle.active::before {
-      opacity: 1;
-    }
-
     /* Flags tab */
     .flags-summary {
       font-size: 13px; color: #666; margin-bottom: 20px;
@@ -937,15 +889,14 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" data-tab="flags">Flags</button>
+      <button class="tab active" data-tab="weekly">Weekly</button>
       <button class="tab" data-tab="monthly">Quarterly</button>
-      <button class="tab" data-tab="weekly">Weekly</button>
       <button class="tab" data-tab="matrix">Performance Matrix</button>
-      <button class="tab" data-tab="trends">Trends</button>
+      <button class="tab" data-tab="flags">Flags</button>
     </div>
 
     <!-- Tab: Flags -->
-    <div class="section active" data-tab="flags">
+    <div class="section" data-tab="flags">
       <div class="flags-summary" id="flagsSummary">Loading flags...</div>
       <div class="flags-grid" id="flagsGrid"></div>
     </div>
@@ -979,7 +930,7 @@
     </div>
 
     <!-- Tab: Weekly -->
-    <div class="section" data-tab="weekly">
+    <div class="section active" data-tab="weekly">
       <div class="weekly-header">
         <div class="control-group">
           <label class="control-label">Week:</label>
@@ -1012,18 +963,6 @@
         </div>
       </div>
       <div class="chart-container" id="matrixContainer"></div>
-    </div>
-
-    <!-- Tab: Trends -->
-    <div class="section" data-tab="trends">
-      <div class="class-toggles" id="classToggles"></div>
-      <div class="chart-container">
-        <div class="chart-wrapper">
-          <div class="monthly-chart-wrapper">
-            <canvas id="trendsChart"></canvas>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1067,7 +1006,7 @@
     const CLASS_COLOURS = ['#e8c547', '#4ade80', '#f87171', '#74b9ff', '#e8c547', '#a29bfe', '#55efc4', '#fab1a0', '#81ecec', '#ffeaa7', '#dfe6e9', '#636e72', '#ff7675', '#fd79a8', '#00cec9'];
 
     let data = [];
-    let currentTab = 'flags';
+    let currentTab = 'weekly';
     let quarterlyState = { quarter: '', months: new Set() };
     let weeklyState = { week: '' };
     let matrixState = { periodType: 'monthly', period: '' };
@@ -1122,7 +1061,7 @@
     }
 
     // ── CSV Processing (mirrors the Apps Script logic) ──────────────────────
-    const EXCLUDE_CLASSES = ['Gym Time', 'Private Event', 'FCS Thursday Throwdown'];
+    const EXCLUDE_CLASSES = ['Gym Time', 'Private Event', 'FCS Thursday Throwdown', '404'];
 
     function csvGetWeekStart(startTime) {
       if (!startTime) return '';
@@ -1144,7 +1083,7 @@
       if (!timePart) return false;
       const [h, m] = timePart.split(':').map(Number);
       const mins = h * 60 + m;
-      return (mins >= 360 && mins <= 540) || (mins >= 1050 && mins <= 1200);
+      return (mins >= 360 && mins <= 540) || (mins >= 1035 && mins <= 1200);
     }
 
     function csvGetDayName(startTime) {
@@ -1623,7 +1562,6 @@
         case 'monthly': renderMonthly(); break;
         case 'weekly': renderWeekly(); break;
         case 'matrix': renderMatrix(); break;
-        case 'trends': renderTrends(); break;
       }
     }
 
@@ -2091,81 +2029,6 @@
       });
 
       document.getElementById('matrixContainer').innerHTML = html;
-    }
-
-    function renderTrends() {
-      const ACTIVE_CLASSES = ['Pilates', 'Yoga', 'HIIT', 'Weights'];
-      const classes = [...new Set(data.map(r => r.Class))].filter(c => ACTIVE_CLASSES.includes(c));
-      const weeks = [...new Set(data.map(r => r.Week_Start))].sort((a, b) => parseDate(a) - parseDate(b));
-
-      let toggleHtml = classes.map((c, idx) => `
-        <button class="class-toggle" data-class="${c}" style="--color: ${CLASS_COLOURS[idx % CLASS_COLOURS.length]}">
-          <span style="background-color: ${CLASS_COLOURS[idx % CLASS_COLOURS.length]}"></span> ${c}
-        </button>
-      `).join('');
-      document.getElementById('classToggles').innerHTML = toggleHtml;
-
-      const toggles = document.querySelectorAll('.class-toggle');
-      toggles.forEach(btn => {
-        btn.addEventListener('click', () => {
-          btn.classList.toggle('active');
-          updateTrendsChart();
-        });
-      });
-
-      updateTrendsChart();
-
-      function updateTrendsChart() {
-        const activeClasses = [...new Map(
-          [...document.querySelectorAll('.class-toggle.active')].map(btn => [btn.dataset.class, btn])
-        ).keys()];
-
-        const datasets = activeClasses.map((cls, idx) => {
-          const chartData = weeks.map(w => {
-            const rows = data.filter(r => r.Week_Start === w && r.Class === cls);
-            return rows.length > 0 ? (wbr(rows)) : null;
-          });
-          return {
-            label: cls,
-            data: chartData,
-            borderColor: CLASS_COLOURS[classes.indexOf(cls) % CLASS_COLOURS.length],
-            backgroundColor: CLASS_COLOURS[classes.indexOf(cls) % CLASS_COLOURS.length] + '33',
-            tension: 0.3,
-            borderWidth: 2,
-            spanGaps: true
-          };
-        });
-
-        if (charts.trends) charts.trends.destroy();
-
-        const ctx = document.getElementById('trendsChart').getContext('2d');
-        charts.trends = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: weeks.map(w => {
-              const date = parseDate(w);
-              return 'W/C ' + date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-            }),
-            datasets: datasets
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { labels: { color: '#666' } }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: { color: '#666' },
-                grid: { color: '#0d0d0d' }
-              },
-              x: { ticks: { color: '#666' }, grid: { color: '#0d0d0d' } }
-            }
-          }
-        });
-      }
     }
 
     // ── File upload handlers ─────────────────────────────────────────────────
