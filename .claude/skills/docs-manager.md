@@ -125,11 +125,9 @@ Generate or update a system doc whenever **any of the following were built or me
 
 **Do not generate a system doc for:** one-off analyses, reports, Excel outputs, planning documents, or minor config tweaks that don't affect how the system works.
 
-### New system — create two Notion pages
+### New system — create the Technical page
 
-Create both as children of the System Documentation folder (`3660164f-7fc6-81ad-b143-f19f80e8a727`) using `Notion:notion-create-pages`.
-
-**Page A — Technical (`[System Name] — Technical`)**
+System Documentation is **technical-only** — one page per system, `[System Name] — Technical`, created as a child of the System Documentation folder (`3660164f-7fc6-81ad-b143-f19f80e8a727`) using `Notion:notion-create-pages`.
 
 Writing style: Saffron's working language — precise, operational shorthand. Technical terminology without definition (RLS, Supabase, anon key, GitHub Pages, GAS, SKILL.md, cron, etc.). Architecture rationale, dependencies, config values, layer references. Assume reader has full ONE LDN stack context.
 
@@ -143,23 +141,11 @@ Must include:
 - Ongoing Maintenance
 - Change History
 
-**Page B — Plain English (`[System Name] — Plain English`)**
+**If the system is a dashboard (or otherwise needs a plain-English counterpart):** the User Manual lives in Dashboard Manuals, not here, and is owned by `dashboard-doc-pair-updater` — trigger it (Step 7) once the Technical page exists. Don't draft a plain-English page yourself; that's duplicate ownership of the same job.
 
-Writing style: Plain spoken English. No acronyms without explanation. Short sentences. Explain what it does and why it exists — omit implementation detail unless it affects a non-technical user. Aimed at Evgenia Koroleva and ONE LDN ops staff.
+### Existing system — update the relevant page
 
-Active rewriting rule: Don't strip jargon — rewrite from scratch. "RLS policies restrict row-level access by user JWT claims" → "The dashboard only shows each user their own data — access is controlled automatically."
-
-Must include (simplified):
-- What does it do
-- Why does it exist
-- What does [relevant person] need to do day-to-day
-- What tools are involved (described in plain terms)
-- What happens if something goes wrong
-- Who should be told if this changes
-
-### Existing system — update the relevant pages
-
-Fetch the existing technical and plain English pages. Identify which sections are affected by this session's changes. Update those sections only — don't overwrite unchanged content.
+Fetch the existing Technical page. Identify which sections are affected by this session's changes. Update those sections only — don't overwrite unchanged content.
 
 Always append to the Change History table in the technical doc:
 ```
@@ -170,10 +156,11 @@ If the system is a dashboard, also trigger `dashboard-doc-pair-updater` (Step 7)
 
 ### After creating or updating system docs
 
-Update the Documentation Log in the Progress Document with Notion page links:
+There is no separate Documentation Log — update the relevant row of the **Active Projects** table on the Progress Document itself (`3660164f-7fc6-81d7-9e14-e2085e8c6ed6`):
 ```
-| [System name] | [DD/MM/YYYY] | [v1.0 or updated version] | [link — technical] | [link — plain English] |
+| [Project] | [Status] | [DD/MM/YYYY] | [Notes — what changed, one line] |
 ```
+Update `Last Updated` and `Notes`; only change `Status` if the session's work actually moved it (e.g. Blocked → In Progress). If the system doesn't map to an existing Active Projects row (a brand-new project), flag this to Saffron rather than inventing one.
 
 ---
 
@@ -199,7 +186,7 @@ Every system documentation page must include:
 - Known limitations or risks — what it can't do, what could break
 - Ongoing maintenance instructions — step-by-step for a non-technical person
 
-The plain English version satisfies the Schedule 1 "non-technical person" requirement. The technical version is the internal working reference.
+For dashboards, the User Manual (Dashboard Manuals, maintained by `dashboard-doc-pair-updater`) satisfies the Schedule 1 "non-technical person" requirement. The Technical page here is the internal working reference for every system, dashboard or not.
 
 ---
 
