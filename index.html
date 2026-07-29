@@ -219,13 +219,127 @@
       margin-bottom: 32px;
     }
 
+    /* Area rows sit below the integrated row, denser so the totals stay the hero. */
+    .kpi-row.kpi-row-area {
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-area-head {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: relative;
+      padding-left: 11px;
+      margin-bottom: 10px;
+    }
+    .kpi-area-head::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 2px; bottom: 2px;
+      width: 3px;
+      border-radius: 2px;
+      background-color: #2a2825;
+    }
+    .kpi-area-head.area-total::before      { background-color: #e8c547; }
+    .kpi-area-head.area-playground::before { background-color: #e8c547; }
+    .kpi-area-head.area-studio::before     { background-color: #74b9ff; }
+    .kpi-area-title {
+      font-size: 14px;
+      font-weight: 650;
+      color: #f0f0f0;
+    }
+    .kpi-area-meta { font-size: 11.5px; color: #666; }
+    .kpi-row-area .kpi-card { padding: 12px 13px; }
+    .kpi-row-area .kpi-value { font-size: 21px; }
+
+    /* Sample too small to read: greyed, and labelled so it says why. */
+    .kpi-card.thin { border-top-color: #4a4744; }
+    .kpi-card.thin .kpi-value { color: #6b665d; }
+    /* The existing green/amber pair fails colourblind separation (ΔE 5.7 under protanopia
+       against a target of 8), so every card carries the verdict in words as well. */
+    .kpi-state {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-right: 6px;
+      vertical-align: 1px;
+    }
+    .kpi-state.green { color: #4ade80; background-color: rgba(74, 222, 128, 0.14); }
+    .kpi-state.amber { color: #e8c547; background-color: rgba(232, 197, 71, 0.14); }
+    .kpi-state.red   { color: #f87171; background-color: rgba(248, 113, 113, 0.14); }
+    .kpi-state.thin  { color: #6b665d; background-color: #1a1a1a; }
+
+    /* ── Day and time-block filters, inline with each tab's period control ── */
+    .filter-slot {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .block-segs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      background-color: #0d0d0d;
+      border: 1px solid #1e1e1e;
+      border-radius: 9px;
+      padding: 3px;
+    }
+    .block-seg {
+      border: none;
+      background-color: transparent;
+      color: #666;
+      font: inherit;
+      font-size: 12px;
+      padding: 6px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    .block-seg:hover:not(:disabled) { color: #f0f0f0; }
+    .block-seg.active {
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+      font-weight: 600;
+    }
+    .block-seg:disabled { color: #3a3733; cursor: not-allowed; }
+    .filter-select {
+      font: inherit;
+      font-size: 13px;
+      background-color: #0d0d0d;
+      color: #f0f0f0;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+    .filter-note {
+      font-size: 11.5px;
+      color: #666;
+      max-width: 34ch;
+    }
+    .unassigned-note {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
     .kpi-card {
       background-color: #111;
       border: 1px solid #1e1e1e;
       border-radius: 12px;
       padding: 16px;
       position: relative;
-      border-top: 3px solid;
+      /* Neutral by default: cards that carry no verdict (Sessions, and Avg Bookings on the
+         integrated row) would otherwise inherit currentColor and read as a white rule. */
+      border-top: 3px solid #2a2825;
     }
 
     .kpi-card::before {
@@ -897,6 +1011,9 @@
 
     <!-- Tab: Flags -->
     <div class="section" data-tab="flags">
+      <div class="quarterly-controls">
+        <div class="filter-slot" id="filters-flags"></div>
+      </div>
       <div class="flags-summary" id="flagsSummary">Loading flags...</div>
       <div class="flags-grid" id="flagsGrid"></div>
     </div>
@@ -910,10 +1027,13 @@
             <option value="">Loading...</option>
           </select>
         </div>
+        <div class="filter-slot" id="filters-monthly"></div>
       </div>
       <div class="month-filters" id="monthFilters"></div>
 
       <div class="kpi-row" id="quarterlyKPI"></div>
+      <div id="quarterlyAreaKPI"></div>
+      <div class="unassigned-note" id="quarterlyUnassigned"></div>
       <div id="coachLeaderboard"></div>
       <div id="missingMonthsNotice"></div>
 
@@ -938,9 +1058,12 @@
             <option value="">Loading...</option>
           </select>
         </div>
+        <div class="filter-slot" id="filters-weekly"></div>
       </div>
 
       <div class="kpi-row" id="weeklyKPI"></div>
+      <div id="weeklyAreaKPI"></div>
+      <div class="unassigned-note" id="weeklyUnassigned"></div>
 
       <div class="weekly-breakdown-grid" id="weeklyBreakdownContainer"></div>
     </div>
@@ -961,6 +1084,7 @@
             <option value="">Loading...</option>
           </select>
         </div>
+        <div class="filter-slot" id="filters-matrix"></div>
       </div>
       <div class="chart-container" id="matrixContainer"></div>
     </div>
@@ -1006,6 +1130,9 @@
     const CLASS_COLOURS = ['#e8c547', '#4ade80', '#f87171', '#74b9ff', '#e8c547', '#a29bfe', '#55efc4', '#fab1a0', '#81ecec', '#ffeaa7', '#dfe6e9', '#636e72', '#ff7675', '#fd79a8', '#00cec9'];
 
     let data = [];
+    // The embedded sample is normalised into a fresh array, so it can no longer be recognised
+    // by identity. This flag keeps sample rows from being merged into a real upload.
+    let usingSampleData = false;
     let currentTab = 'weekly';
     let quarterlyState = { quarter: '', months: new Set() };
     let weeklyState = { week: '' };
@@ -1044,6 +1171,14 @@
       return 'red';
     }
 
+    // For absolute counts rather than percentages. A fixed 10-point amber band makes no sense
+    // against a target of 13, so the band is proportional: within 15% of target is 'near'.
+    function kpiColorCount(val, target) {
+      if (val >= target) return 'green';
+      if (val >= target * 0.85) return 'amber';
+      return 'red';
+    }
+
     function heatColor(pct) {
       if (pct < 50) {
         const ratio = pct / 50;
@@ -1061,66 +1196,199 @@
     }
 
     // ── CSV Processing (mirrors the Apps Script logic) ──────────────────────
-    const EXCLUDE_CLASSES = ['Gym Time', 'Private Event', 'FCS Thursday Throwdown', '404'];
+    // 'FSC Thursday Throwdown' is how the export actually spells it; the old 'FCS' entry
+    // never matched, so those rows were being ingested. Both spellings kept deliberately.
+    const EXCLUDE_CLASSES = [
+      'Gym Time', 'Private Event', '404',
+      'FSC Thursday Throwdown', 'FCS Thursday Throwdown',
+      'Unbeatable Hybrid Race',   // an event, not a class
+      'C4 Energy Run Club',       // one-off
+      'Hyrox Recovery Pass'       // a pass, not a class
+    ];
 
-    function csvGetWeekStart(startTime) {
-      if (!startTime) return '';
-      const datePart = startTime.split(' ')[0];
-      const parts = datePart.split('/');
-      if (parts.length < 3) return '';
-      const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-      const day = d.getDay();
-      const diff = day === 0 ? -6 : 1 - day;
-      d.setDate(d.getDate() + diff);
-      const dd = String(d.getDate()).padStart(2, '0');
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      return `${dd}/${mm}/${d.getFullYear()}`;
+    // WodBoard exports the same class under inconsistent casing; merge those identities
+    // or the dashboard reads them as separate classes forever.
+    const CLASS_ALIASES = { 'COMP CLASS': 'Comp class' };
+    function normaliseClassName(name) {
+      const c = (name || '').trim();
+      return CLASS_ALIASES[c.toUpperCase()] || CLASS_ALIASES[c] || c;
     }
 
-    function csvCheckIsPeak(startTime) {
-      if (!startTime) return false;
-      const timePart = startTime.split(' ')[1];
-      if (!timePart) return false;
-      const [h, m] = timePart.split(':').map(Number);
-      const mins = h * 60 + m;
-      return (mins >= 360 && mins <= 540) || (mins >= 1035 && mins <= 1200);
+    // ── Areas ────────────────────────────────────────────────────────────────
+    // There is no room/area field in the WodBoard export, so the mapping has to live here.
+    // A class absent from all three lists shows in the integrated totals but in neither
+    // area row, and is counted in the "unassigned" notice so new names can't vanish silently.
+    const AREA_PLAYGROUND = 'The Playground';
+    const AREA_STUDIO     = 'The Studio';
+    const AREA_OFFSITE    = 'Off-site';
+
+    const PLAYGROUND_ROUTINE = ['WOD','WOD - PEAK','WOD - THRESHOLD','HYROX','HYROX - PEAK',
+      'HYROX - THRESHOLD','Hyrox CONDITIONING','Hyrox STRENGTH','Built','Weightlifting','Hyrox 90',
+      'Friday Night Lights','Local Business Breakfast Club','Sunday Sweat','SWEAT'];
+    const PLAYGROUND_EVENT = ['Comp class','HYROX Simulation SOLO','FNL - GymSync',
+      'FNL x Unbeatable as ONE','FNL x TURF GAMES','FNL X ISLAND GAMES','Hard Wins x NIKE',
+      'Nike Engine Room Experience','Strength - Move with Intent','HYROX PREP SERIES',
+      'Kick Boxing Camp w/Max Performance','UNBEATABLE Events','HYROX x Wattbike AirPro',
+      'Turf Games Style','Sunday Service'];
+    const STUDIO_ROUTINE = ['Mat Pilates (Dynamic)','Mat Pilates (Classical)',
+      'Yoga - Dynamic Flow Vinyasa','Yoga - Slow Flow Vinyasa','Morning Yoga Flow'];
+    const STUDIO_EVENT = ['PILATES X BON CHARGE','YOGA X BON CHARGE'];
+    const OFFSITE_CLASSES = ['ONE LDN RUN CLUB','Cadence X ONE LDN Run Club'];
+
+    function classArea(name) {
+      if (PLAYGROUND_ROUTINE.includes(name) || PLAYGROUND_EVENT.includes(name)) return AREA_PLAYGROUND;
+      if (STUDIO_ROUTINE.includes(name)     || STUDIO_EVENT.includes(name))     return AREA_STUDIO;
+      if (OFFSITE_CLASSES.includes(name))                                       return AREA_OFFSITE;
+      return '';
+    }
+    // Events and short courses are held apart from the weekly timetable: they fill far better
+    // than routine classes, so folding them in flatters the timetable's own numbers.
+    function isRoutineClass(name) {
+      return PLAYGROUND_ROUTINE.includes(name) || STUDIO_ROUTINE.includes(name);
     }
 
-    function csvGetDayName(startTime) {
-      if (!startTime) return '';
-      const datePart = startTime.split(' ')[0];
-      const parts = datePart.split('/');
-      if (parts.length < 3) return '';
-      const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-      return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
+    // Headcount targets, set independently per area. 13 is 72% of an 18-cap Playground class,
+    // 10 is 71% of a 14-cap Studio class. Weightlifting (cap 10) and Built (cap 12) cannot
+    // reach 13 — accepted deliberately rather than softening the target.
+    const AREA_HEAD_TARGET = { [AREA_PLAYGROUND]: 13, [AREA_STUDIO]: 10 };
+    const MIN_SAMPLE = 5;   // below this, a KPI card is greyed rather than read as reliable
+
+    // ── UTC → Europe/London ──────────────────────────────────────────────────
+    // WodBoard exports `Start time` in UTC, so through British Summer Time every class reads
+    // an hour early. Stored timestamps stay UTC (which keeps the (class_name, start_time,
+    // week_start) unique constraint stable); day, time and block are derived in London time
+    // on both ingest and read, so historical rows correct themselves without a backfill.
+    function lastSundayUTC(year, monthIdx) {
+      const d = new Date(Date.UTC(year, monthIdx + 1, 0));
+      d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+      return d;
+    }
+    function isBritishSummerTime(utcDate) {
+      const y = utcDate.getUTCFullYear();
+      const start = lastSundayUTC(y, 2); start.setUTCHours(1, 0, 0, 0);
+      const end   = lastSundayUTC(y, 9); end.setUTCHours(2, 0, 0, 0);
+      return utcDate >= start && utcDate < end;
+    }
+    // "DD/MM/YYYY HH:MM" in UTC → a Date whose getUTC* accessors read London wall-clock.
+    function londonFromUtcString(startTime) {
+      if (!startTime) return null;
+      const [datePart, timePart] = startTime.split(' ');
+      const p = (datePart || '').split('/');
+      if (p.length < 3) return null;
+      const [hh, mi] = (timePart || '00:00').split(':').map(Number);
+      const utc = new Date(Date.UTC(+p[2], +p[1] - 1, +p[0], hh || 0, mi || 0));
+      if (isNaN(utc)) return null;
+      return new Date(utc.getTime() + (isBritishSummerTime(utc) ? 3600000 : 0));
+    }
+
+    // ── Time blocks ──────────────────────────────────────────────────────────
+    // Blocks follow the day, because the weekday and weekend timetables barely overlap.
+    // Weekdays: AM 06:00–08:59 · Lunch 12:00–13:00 · PM 17:00–19:30.
+    // Weekends: peak 09:00–11:00 only — no lunch or evening classes run.
+    // Computed on read rather than stored, so the windows can be revised in one place.
+    const BLOCK_AM = 'am', BLOCK_LUNCH = 'lunch', BLOCK_PM = 'pm', BLOCK_OFF = 'off';
+    const BLOCK_LABELS = { [BLOCK_AM]: 'AM Peak', [BLOCK_LUNCH]: 'Lunch',
+                           [BLOCK_PM]: 'PM Peak', [BLOCK_OFF]: 'Off-peak' };
+    const BLOCK_ORDER = [BLOCK_AM, BLOCK_LUNCH, BLOCK_PM, BLOCK_OFF];
+    const WEEKEND_DAYS = ['Saturday', 'Sunday'];
+
+    function timeBlockFor(dayName, minutes) {
+      if (WEEKEND_DAYS.includes(dayName)) {
+        return (minutes >= 540 && minutes <= 660) ? BLOCK_AM : BLOCK_OFF;   // 09:00–11:00
+      }
+      if (minutes >= 360  && minutes < 540)   return BLOCK_AM;              // 06:00–08:59
+      if (minutes >= 720  && minutes <= 780)  return BLOCK_LUNCH;           // 12:00–13:00
+      if (minutes >= 1020 && minutes <= 1170) return BLOCK_PM;              // 17:00–19:30
+      return BLOCK_OFF;
+    }
+
+    // Single source of truth for every time-derived field, used by both the CSV path and
+    // the Supabase read path so the two can never disagree.
+    const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    function deriveTimeFields(startTimeUtc) {
+      const d = londonFromUtcString(startTimeUtc);
+      if (!d) return { weekStart: '', dayName: '', timeStr: '', dayTime: '', block: BLOCK_OFF, isPeak: false };
+      const dayName = DAY_NAMES[d.getUTCDay()];
+      const hh = String(d.getUTCHours()).padStart(2, '0');
+      const mi = String(d.getUTCMinutes()).padStart(2, '0');
+      const timeStr = `${hh}:${mi}`;
+      const block = timeBlockFor(dayName, d.getUTCHours() * 60 + d.getUTCMinutes());
+      // Monday of the London week. Derived from the London date so a late-evening class that
+      // crosses midnight in conversion lands in the right week.
+      const monday = new Date(d.getTime());
+      monday.setUTCDate(monday.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+      const wd = String(monday.getUTCDate()).padStart(2, '0');
+      const wm = String(monday.getUTCMonth() + 1).padStart(2, '0');
+      return {
+        weekStart: `${wd}/${wm}/${monday.getUTCFullYear()}`,
+        dayName, timeStr, dayTime: `${dayName} ${timeStr}`,
+        block, isPeak: block !== BLOCK_OFF
+      };
+    }
+
+    function csvGetWeekStart(startTime) { return deriveTimeFields(startTime).weekStart; }
+    function csvGetDayName(startTime)   { return deriveTimeFields(startTime).dayName; }
+
+    // Re-derive every computed field on an already-shaped session record. Used for the
+    // master-sheet upload path and for the embedded sample, both of which carry pre-fix values.
+    function normaliseSessionRows(rows) {
+      return rows.reduce((out, r) => {
+        const className = normaliseClassName(r.Class);
+        if (!className || EXCLUDE_CLASSES.includes(className)) return out;
+        const capacity = parseInt(r.Capacity) || 0;
+        if (capacity <= 0) return out;
+        const startTime = (r['Start time'] || '').trim();
+        const t = deriveTimeFields(startTime);
+        const bookings = parseInt(r.Bookings) || 0;
+        out.push({
+          Class: className,
+          'Start time': startTime,
+          Capacity: capacity,
+          Bookings: bookings,
+          Cancelled: parseInt(r.Cancelled) || 0,
+          Week_Start: t.weekStart,
+          Attendance_Pct: Number(r.Attendance_Pct) || 0,
+          Booking_Rate: parseFloat(((bookings / capacity) * 100).toFixed(1)),
+          Is_Peak: t.isPeak,
+          Time_Block: t.block,
+          Coach_Label: r.Coach_Label || 'Unassigned',
+          Day_Name: t.dayName,
+          Time_Str: t.timeStr,
+          Day_Time: t.dayTime,
+          Area: classArea(className),
+          Is_Routine: isRoutineClass(className)
+        });
+        return out;
+      }, []);
     }
 
     function processRawRows(rows) {
       const results = [];
       for (const r of rows) {
-        const className = (r['Class'] || '').trim();
+        const className = normaliseClassName(r['Class']);
         if (!className || EXCLUDE_CLASSES.includes(className)) continue;
         const startTime = (r['Start time'] || '').trim();
         if (!startTime) continue;
+        const capacity  = parseInt(r['Capacity'])  || 0;
+        // Capacity 0 gives no computable booking rate and used to produce NaN averages.
+        if (capacity <= 0) continue;
         const staff1    = (r['First staff member']  || '').trim();
         const staff2    = (r['Second staff member'] || '').trim();
         const staff3    = (r['Third staff member']  || '').trim();
-        const capacity  = parseInt(r['Capacity'])  || 0;
         const bookings  = parseInt(r['Bookings'])  || 0;
         const attendance = (r['Attendance'] || '').trim();
         const cancelled = parseInt(r['Cancelled']) || 0;
 
-        const weekStart    = csvGetWeekStart(startTime);
         let attPct = 0;
         if (attendance && attendance !== '-') {
           attPct = parseFloat(attendance.replace('%', '')) || 0;
         }
-        const bookingRate  = capacity > 0 ? parseFloat(((bookings / capacity) * 100).toFixed(1)) : 0;
-        const isPeak       = csvCheckIsPeak(startTime);
+        const bookingRate  = parseFloat(((bookings / capacity) * 100).toFixed(1));
         const coaches      = [staff1, staff2, staff3].filter(s => s !== '');
         const coachLabel   = coaches.length > 0 ? coaches.join(' + ') : 'Unassigned';
-        const dayName      = csvGetDayName(startTime);
-        const timeStr      = startTime.split(' ')[1] || '';
+        // `Start time` is kept exactly as exported (UTC) so the Supabase unique constraint
+        // stays stable; everything shown to the user comes off the London conversion.
+        const t = deriveTimeFields(startTime);
 
         results.push({
           Class: className,
@@ -1128,14 +1396,17 @@
           Capacity: capacity,
           Bookings: bookings,
           Cancelled: cancelled,
-          Week_Start: weekStart,
+          Week_Start: t.weekStart,
           Attendance_Pct: attPct,
           Booking_Rate: bookingRate,
-          Is_Peak: isPeak,
+          Is_Peak: t.isPeak,
+          Time_Block: t.block,
           Coach_Label: coachLabel,
-          Day_Name: dayName,
-          Time_Str: timeStr,
-          Day_Time: `${dayName} ${timeStr}`
+          Day_Name: t.dayName,
+          Time_Str: t.timeStr,
+          Day_Time: t.dayTime,
+          Area: classArea(className),
+          Is_Routine: isRoutineClass(className)
         });
       }
       return results;
@@ -1205,21 +1476,35 @@
           from += PAGE;
         }
         if (allRecords.length === 0) return null;
-        return allRecords.map(r => ({
-          Class:          r.class_name,
-          'Start time':   isoToStartTime(r.start_time),
-          Capacity:       r.capacity,
-          Bookings:       r.bookings,
-          Cancelled:      r.cancelled,
-          Week_Start:     isoToWeekStart(r.week_start),
-          Attendance_Pct: r.attendance_pct,
-          Booking_Rate:   r.booking_rate,
-          Is_Peak:        r.is_peak,
-          Coach_Label:    r.coach_label,
-          Day_Name:       r.day_name,
-          Time_Str:       r.time_str,
-          Day_Time:       r.day_time
-        }));
+        // Time-derived columns stored in Supabase pre-date the UTC fix, so they are recomputed
+        // from start_time rather than trusted. That corrects the whole history on read, with no
+        // migration and no risk of duplicating rows against the unique constraint.
+        return allRecords.reduce((out, r) => {
+          const className = normaliseClassName(r.class_name);
+          if (!className || EXCLUDE_CLASSES.includes(className)) return out;
+          if (!(r.capacity > 0)) return out;
+          const startTime = isoToStartTime(r.start_time);
+          const t = deriveTimeFields(startTime);
+          out.push({
+            Class:          className,
+            'Start time':   startTime,
+            Capacity:       r.capacity,
+            Bookings:       r.bookings,
+            Cancelled:      r.cancelled,
+            Week_Start:     t.weekStart || isoToWeekStart(r.week_start),
+            Attendance_Pct: r.attendance_pct,
+            Booking_Rate:   r.booking_rate,
+            Is_Peak:        t.isPeak,
+            Time_Block:     t.block,
+            Coach_Label:    r.coach_label,
+            Day_Name:       t.dayName,
+            Time_Str:       t.timeStr,
+            Day_Time:       t.dayTime,
+            Area:           classArea(className),
+            Is_Routine:     isRoutineClass(className)
+          });
+          return out;
+        }, []);
       } catch(e) { return null; }
     }
 
@@ -1261,22 +1546,18 @@
           if (isRawFormat(headers)) {
             rows = processRawRows(results.data);
           } else {
-            // Pre-processed master-sheet format
-            rows = results.data.filter(r => r.Class).map(r => ({
+            // Pre-processed master-sheet format. Time-derived columns in the sheet are ignored
+            // and recomputed, so a sheet exported before the UTC fix still lands correctly.
+            rows = normaliseSessionRows(results.data.filter(r => r.Class).map(r => ({
               Class: r.Class,
               'Start time': r['Start time'],
               Capacity:       parseInt(r.Capacity)       || 0,
               Bookings:       parseInt(r.Bookings)       || 0,
               Cancelled:      parseInt(r.Cancelled)      || 0,
-              Week_Start:     r.Week_Start,
               Attendance_Pct: parseFloat(r.Attendance_Pct) || 0,
               Booking_Rate:   parseFloat(r.Booking_Rate)   || 0,
-              Is_Peak:        r.Is_Peak === 'TRUE' || r.Is_Peak === 'true' || r.Is_Peak === true,
-              Coach_Label:    r.Coach_Label || 'Unassigned',
-              Day_Name:       r.Day_Name   || csvGetDayName(r['Start time']),
-              Time_Str:       r.Time_Str   || (r['Start time'] || '').split(' ')[1] || '',
-              Day_Time:       r.Day_Time   || ''
-            }));
+              Coach_Label:    r.Coach_Label || 'Unassigned'
+            })));
           }
           newRows = newRows.concat(rows);
         } catch (e) {
@@ -1291,7 +1572,7 @@
       }
 
       // Merge with any existing uploaded data (not sample data), then deduplicate
-      const existing = (data !== EMBEDDED_DATA && data.length > 0) ? data : [];
+      const existing = (!usingSampleData && data.length > 0) ? data : [];
       const combined = [...existing, ...newRows];
       const seen = new Set();
       const deduped = combined.filter(r => {
@@ -1302,6 +1583,7 @@
       });
 
       data = deduped.sort((a, b) => parseDate(a.Week_Start) - parseDate(b.Week_Start));
+      usingSampleData = false;
 
       // Persist to Supabase — only upsert the new rows (Supabase handles dedup)
       document.getElementById('uploadZoneText').textContent = 'Saving to Supabase…';
@@ -1365,6 +1647,7 @@
       const stored = await loadDataFromStorage();
       if (stored) {
         data = stored;
+        usingSampleData = false;
         const savedDate = await storageSavedDate();
         const dateStr = savedDate
           ? savedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -1378,7 +1661,9 @@
         renderCurrentTab();
         updateStatus('success', `${data.length.toLocaleString()} records loaded from Supabase`);
       } else if (EMBEDDED_DATA && Array.isArray(EMBEDDED_DATA) && EMBEDDED_DATA.length > 0) {
-        data = EMBEDDED_DATA;
+        // The sample carries the original UTC times, so it goes through the same correction.
+        data = normaliseSessionRows(EMBEDDED_DATA);
+        usingSampleData = true;
         populateSelects();
         renderCurrentTab();
         updateStatus('', 'Showing sample data — upload CSV files to load your own');
@@ -1480,16 +1765,156 @@
       return data.filter(row => months.has(getMonthKey(row)));
     }
 
+    // ── Day + time-block filters ──────────────────────────────────────────────
+    // Deliberately reset when switching tabs: carrying a narrow filter across to another
+    // view is how people end up reading an empty tab as "no data".
+    let filterState = { day: 'all', block: 'all' };
+    function resetFilters() { filterState = { day: 'all', block: 'all' }; }
+
+    function applySessionFilters(rows) {
+      return rows.filter(r =>
+        (filterState.day === 'all' || r.Day_Name === filterState.day) &&
+        (filterState.block === 'all' || r.Time_Block === filterState.block));
+    }
+
+    // Block options follow the selected day, so a block with no classes on that day is
+    // disabled rather than offered and returning nothing. Weekends have no lunch or PM.
+    function renderFilterControls(slotId, periodRows) {
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      const dayScoped = filterState.day === 'all'
+        ? periodRows
+        : periodRows.filter(r => r.Day_Name === filterState.day);
+      const available = new Set(dayScoped.map(r => r.Time_Block));
+      if (filterState.block !== 'all' && !available.has(filterState.block)) filterState.block = 'all';
+
+      const daysPresent = DAY_ORDER.filter(d => periodRows.some(r => r.Day_Name === d));
+      const note = filterState.day === 'all'
+        ? 'Blocks follow the day: weekdays 06:00–09:00 / 12:00–13:00 / 17:00–19:30, weekends 09:00–11:00.'
+        : (WEEKEND_DAYS.includes(filterState.day)
+            ? 'Weekend peak is 09:00–11:00. No lunch or evening classes run.'
+            : 'Weekday: AM 06:00–09:00 · Lunch 12:00–13:00 · PM 17:00–19:30.');
+
+      slot.innerHTML = `
+        <div class="control-group">
+          <label class="control-label" for="${slotId}-day">Day:</label>
+          <select class="filter-select" id="${slotId}-day">
+            <option value="all">All days</option>
+            ${daysPresent.map(d => `<option value="${d}"${filterState.day === d ? ' selected' : ''}>${d}</option>`).join('')}
+          </select>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Time block:</label>
+          <div class="block-segs">
+            <button type="button" class="block-seg ${filterState.block === 'all' ? 'active' : ''}" data-block="all">All</button>
+            ${BLOCK_ORDER.map(b => `<button type="button" class="block-seg ${filterState.block === b ? 'active' : ''}"
+              data-block="${b}"${available.has(b) ? '' : ' disabled title="No classes in this block on the selected day"'}
+              >${BLOCK_LABELS[b]}</button>`).join('')}
+          </div>
+        </div>
+        <div class="filter-note">${note}</div>
+      `;
+      slot.querySelector(`#${slotId}-day`).addEventListener('change', e => {
+        filterState.day = e.target.value;
+        renderCurrentTab();
+      });
+      slot.querySelectorAll('.block-seg').forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterState.block = btn.dataset.block;
+          renderCurrentTab();
+        });
+      });
+    }
+
+    // ── Shared KPI cards ─────────────────────────────────────────────────────
+    const STATE_WORDS = { green: 'On target', amber: 'Near', red: 'Below', thin: 'Low n' };
+
+    function kpiCard(label, value, target, state, thin) {
+      const cls = thin ? 'thin' : (state || '');
+      const word = thin ? 'thin' : state;
+      return `
+        <div class="kpi-card ${cls}">
+          <div class="kpi-label">${label}</div>
+          <div class="kpi-value">${value}</div>
+          <div class="kpi-target">${word ? `<span class="kpi-state ${word}">${STATE_WORDS[word]}</span>` : ''}${target}</div>
+        </div>`;
+    }
+
+    // headTarget null on the integrated row: two areas with different targets have no
+    // meaningful joint one, so the figure is shown without a verdict.
+    function kpiCardsHtml(rows, headTarget) {
+      if (!rows.length) {
+        return `<div class="kpi-card thin" style="grid-column:1/-1">
+          <div class="kpi-label">No sessions</div>
+          <div class="kpi-value">—</div>
+          <div class="kpi-target">Nothing matches these filters</div></div>`;
+      }
+      const thin = rows.length < MIN_SAMPLE;
+      const rate = wbr(rows);
+      const att  = rows.reduce((s, r) => s + r.Attendance_Pct, 0) / rows.length;
+      const head = rows.reduce((s, r) => s + r.Bookings, 0) / rows.length;
+      const canx = cancellationRate(rows);
+      return [
+        kpiCard('Avg Booking Rate', formatPct(rate), 'Target: 70%', kpiColor(rate, 70), thin),
+        kpiCard('Avg Attendance %', formatPct(att), 'Target: 70%', kpiColor(att, 70), thin),
+        headTarget
+          ? kpiCard('Avg Bookings', head.toFixed(1), `Target: ${headTarget}`,
+                    kpiColorCount(head, headTarget), thin)
+          : kpiCard('Avg Bookings', head.toFixed(1), 'Per-area targets below', null, thin),
+        kpiCard('Sessions', rows.length,
+                thin ? `Under ${MIN_SAMPLE} — read with care` : 'In selection', null, thin),
+        kpiCard('Canx Rate', formatPct(canx), 'Target: &lt;15%',
+                canx > 30 ? 'red' : canx > 15 ? 'amber' : 'green', thin)
+      ].join('');
+    }
+
+    // The two area rows. They need not sum to the integrated row: off-site classes belong to
+    // no area, and any unmapped class name is reported rather than quietly dropped.
+    function renderAreaKpiRows(containerId, unassignedId, rows) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const areas = [
+        { name: AREA_PLAYGROUND, cls: 'area-playground' },
+        { name: AREA_STUDIO,     cls: 'area-studio' }
+      ];
+      container.innerHTML = areas.map(a => {
+        const areaRows = rows.filter(r => r.Area === a.name);
+        const events = areaRows.filter(r => !r.Is_Routine).length;
+        const target = AREA_HEAD_TARGET[a.name];
+        const meta = areaRows.length
+          ? `${areaRows.length} session${areaRows.length === 1 ? '' : 's'}`
+            + ` · ${events} event${events === 1 ? '' : 's'} · target ${target} bookings`
+          : 'No sessions in this selection';
+        return `
+          <div class="kpi-area-head ${a.cls}">
+            <span class="kpi-area-title">${a.name}</span>
+            <span class="kpi-area-meta">${meta}</span>
+          </div>
+          <div class="kpi-row kpi-row-area">${kpiCardsHtml(areaRows, target)}</div>`;
+      }).join('');
+
+      const noteEl = document.getElementById(unassignedId);
+      if (!noteEl) return;
+      const offsite = rows.filter(r => r.Area === AREA_OFFSITE).length;
+      const unmapped = [...new Set(rows.filter(r => !r.Area).map(r => r.Class))];
+      const bits = [];
+      if (offsite) bits.push(`${offsite} off-site session${offsite === 1 ? '' : 's'} (in neither area)`);
+      if (unmapped.length) bits.push(`${unmapped.length} unmapped class${unmapped.length === 1 ? '' : 'es'}: ${unmapped.join(', ')} — add to the area map`);
+      noteEl.innerHTML = bits.length ? '⚠ ' + bits.join(' · ') : '';
+    }
+
 
     function renderFlags() {
       var weeks = Array.from(new Set(data.map(function(r){ return r.Week_Start; }))).sort(function(a, b) { return parseDate(a) - parseDate(b); });
       if (!weeks.length) { document.getElementById('flagsSummary').textContent = 'No data loaded.'; return; }
       var recentWeeks = weeks.slice(-3);
       var latestWeek = recentWeeks[recentWeeks.length - 1];
+      var periodRows = data.filter(function(r){ return recentWeeks.includes(r.Week_Start); });
+      renderFilterControls('filters-flags', periodRows);
+      var flagRows = applySessionFilters(periodRows);
 
       var combos = {};
-      data.forEach(function(r) {
-        if (!recentWeeks.includes(r.Week_Start)) return;
+      flagRows.forEach(function(r) {
         var key = r.Class + '|||' + r.Coach_Label + '|||' + r.Day_Time;
         if (!combos[key]) combos[key] = { cls: r.Class, coach: r.Coach_Label, dayTime: r.Day_Time, weeks: {}, rows: [] };
         if (!combos[key].weeks[r.Week_Start]) combos[key].weeks[r.Week_Start] = [];
@@ -1566,43 +1991,12 @@
     }
 
     function renderMonthly() {
+      const periodRows = getFilteredData(quarterlyState.months);
+      renderFilterControls('filters-monthly', periodRows);
+      const filtered = applySessionFilters(periodRows);
 
-      const filtered = getFilteredData(quarterlyState.months);
-      
-      const avgBooking = wbr(filtered);
-      const avgAttendance = filtered.reduce((s, r) => s + r.Attendance_Pct, 0) / filtered.length || 0;
-      const peakData = filtered.filter(r => r.Is_Peak);
-      const avgPeakBooking = wbr(peakData);
-      const totalSessions = filtered.length;
-      const avgCanx = cancellationRate(filtered);
-
-      const kpiHtml = `
-        <div class="kpi-card ${kpiColor(avgBooking, 70)}">
-          <div class="kpi-label">Avg Booking Rate</div>
-          <div class="kpi-value">${formatPct(avgBooking)}</div>
-          <div class="kpi-target">Target: 70%</div>
-        </div>
-        <div class="kpi-card ${kpiColor(avgAttendance, 70)}">
-          <div class="kpi-label">Avg Attendance %</div>
-          <div class="kpi-value">${formatPct(avgAttendance)}</div>
-          <div class="kpi-target">Target: 70%</div>
-        </div>
-        <div class="kpi-card ${kpiColor(avgPeakBooking, 80)}">
-          <div class="kpi-label">Avg Peak Booking Rate</div>
-          <div class="kpi-value">${formatPct(avgPeakBooking)}</div>
-          <div class="kpi-target">Target: 80%</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Total Sessions</div>
-          <div class="kpi-value">${totalSessions}</div>
-        </div>
-        <div class="kpi-card ${avgCanx > 30 ? 'red' : avgCanx > 15 ? 'amber' : 'green'}">
-          <div class="kpi-label">Canx Rate</div>
-          <div class="kpi-value">${formatPct(avgCanx)}</div>
-          <div class="kpi-target">Target: &lt;15%</div>
-        </div>
-      `;
-      document.getElementById('quarterlyKPI').innerHTML = kpiHtml;
+      document.getElementById('quarterlyKPI').innerHTML = kpiCardsHtml(filtered, null);
+      renderAreaKpiRows('quarterlyAreaKPI', 'quarterlyUnassigned', filtered);
 
       // Missing months warning
       const expectedMonths = getMonthsInQuarter(quarterlyState.quarter);
@@ -1621,19 +2015,22 @@
     }
 
     function renderQuarterlyChart(filtered) {
-      const allMonths = [...new Set(data.map(r => getMonthKey(r)))].sort();
+      // The trend spans every month, but still respects the active day/block filter so the
+      // chart cannot disagree with the cards above it.
+      const scoped = applySessionFilters(data);
+      const allMonths = [...new Set(scoped.map(r => getMonthKey(r)))].sort();
       const labels = allMonths.map(m => {
         const [year, month] = m.split('-');
         return MONTH_NAMES[parseInt(month) - 1].substring(0, 3) + ' ' + year;
       });
 
       const bookingByMonth = allMonths.map(m => {
-        const rows = data.filter(r => getMonthKey(r) === m);
+        const rows = scoped.filter(r => getMonthKey(r) === m);
         return rows.length > 0 ? (wbr(rows)) : 0;
       });
 
       const attendanceByMonth = allMonths.map(m => {
-        const rows = data.filter(r => getMonthKey(r) === m);
+        const rows = scoped.filter(r => getMonthKey(r) === m);
         return rows.length > 0 ? (rows.reduce((s, r) => s + r.Attendance_Pct, 0) / rows.length) : 0;
       });
 
@@ -1834,41 +2231,12 @@
 
     function renderWeekly() {
       const week = weeklyState.week;
-      const filtered = data.filter(r => r.Week_Start === week);
+      const periodRows = data.filter(r => r.Week_Start === week);
+      renderFilterControls('filters-weekly', periodRows);
+      const filtered = applySessionFilters(periodRows);
 
-      const avgBooking = wbr(filtered);
-      const avgAttendance = filtered.reduce((s, r) => s + r.Attendance_Pct, 0) / filtered.length || 0;
-      const peakData = filtered.filter(r => r.Is_Peak);
-      const avgPeakBooking = wbr(peakData);
-      const avgCanx = cancellationRate(filtered);
-
-      const kpiHtml = `
-        <div class="kpi-card ${kpiColor(avgBooking, 70)}">
-          <div class="kpi-label">Avg Booking Rate</div>
-          <div class="kpi-value">${formatPct(avgBooking)}</div>
-          <div class="kpi-target">Target: 70%</div>
-        </div>
-        <div class="kpi-card ${kpiColor(avgAttendance, 70)}">
-          <div class="kpi-label">Avg Attendance %</div>
-          <div class="kpi-value">${formatPct(avgAttendance)}</div>
-          <div class="kpi-target">Target: 70%</div>
-        </div>
-        <div class="kpi-card ${kpiColor(avgPeakBooking, 80)}">
-          <div class="kpi-label">Peak Booking Rate</div>
-          <div class="kpi-value">${formatPct(avgPeakBooking)}</div>
-          <div class="kpi-target">Target: 80%</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Sessions</div>
-          <div class="kpi-value">${filtered.length}</div>
-        </div>
-        <div class="kpi-card ${avgCanx > 30 ? 'red' : avgCanx > 15 ? 'amber' : 'green'}">
-          <div class="kpi-label">Canx Rate</div>
-          <div class="kpi-value">${formatPct(avgCanx)}</div>
-          <div class="kpi-target">Target: &lt;15%</div>
-        </div>
-      `;
-      document.getElementById('weeklyKPI').innerHTML = kpiHtml;
+      document.getElementById('weeklyKPI').innerHTML = kpiCardsHtml(filtered, null);
+      renderAreaKpiRows('weeklyAreaKPI', 'weeklyUnassigned', filtered);
 
       const classByName = {};
       filtered.forEach(r => {
@@ -1950,13 +2318,15 @@
     }
 
     function renderMatrix() {
-      let filtered;
+      let periodRows;
       if (matrixState.periodType === 'monthly') {
-        filtered = data.filter(r => getMonthKey(r) === matrixState.period);
+        periodRows = data.filter(r => getMonthKey(r) === matrixState.period);
       } else {
         const months = getMonthsInQuarter(matrixState.period);
-        filtered = data.filter(r => months.includes(getMonthKey(r)));
+        periodRows = data.filter(r => months.includes(getMonthKey(r)));
       }
+      renderFilterControls('filters-matrix', periodRows);
+      const filtered = applySessionFilters(periodRows);
 
       if (!filtered.length) {
         document.getElementById('matrixContainer').innerHTML = '<p style="color:#8b8fa3;text-align:center;padding:40px">No data for this period</p>';
@@ -2076,6 +2446,7 @@
         e.target.classList.add('active');
         currentTab = e.target.dataset.tab;
         document.querySelector(`.section[data-tab="${currentTab}"]`).classList.add('active');
+        resetFilters();
         renderCurrentTab();
       });
     });
