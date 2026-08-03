@@ -17,6 +17,23 @@ The **entire application is one file: `index.html`** — embedded CSS + vanilla 
   ```
   (The earlier `<script src=...>` CDN tags don't match `/<script>/`, so this grabs the main block.)
 - **`index.html` is ~1MB** — most of the size is the embedded sample data on one line near the top (`EMBEDDED_DATA`). Use `Grep`/`Read` with offsets rather than reading the whole file; edit by targeting the function/constant you need.
+- `logs/class-performance-dashboard_log.md` — rolling session log, newest first. **Read the top entry
+  at the start of every session** — it says exactly where things stand.
+
+## Session Logging (always on)
+
+Log file: `logs/class-performance-dashboard_log.md` — rolling log, newest entry at top, committed and
+pushed on the session's working branch.
+
+At the end of **every** session — or whenever asked ("save this conversation", "log this
+session", "capture this", "save notes from this", "create a conversation log") — invoke
+the **`session-log`** skill and follow it exactly. Do not skip this, even for short
+sessions. The skill owns the entry template and the prepend/commit workflow — it is the
+single source of truth for the log format.
+
+The standard: a future Claude session with zero memory of this conversation must be able
+to pick up and continue without asking for re-explanation. Err on the side of more
+detail, not less.
 
 ## Architecture (the parts that span files/concepts)
 
